@@ -1,19 +1,17 @@
 from os import environ
 
-from twisted.application.service import Application
-from twisted.application.internet import TimerService, TCPServer
-from twisted.web import server
-from twisted.python import log
-
-from scrapyd.interfaces import (IEggStorage, IPoller, ISpiderScheduler,
-    IEnvironment)
-from scrapyd.launcher import Launcher
+from scrapy_heroku.poller import Psycopg2QueuePoller
+from scrapy_heroku.scheduler import Psycopg2SpiderScheduler
 from scrapyd.eggstorage import FilesystemEggStorage
 from scrapyd.environ import Environment
+from scrapyd.interfaces import (IEggStorage, IEnvironment, IPoller,
+                                ISpiderScheduler)
+from scrapyd.launcher import Launcher
 from scrapyd.website import Root
-
-from .scheduler import Psycopg2SpiderScheduler
-from .poller import Psycopg2QueuePoller
+from twisted.application.internet import TCPServer, TimerService
+from twisted.application.service import Application
+from twisted.python import log
+from twisted.web import server
 
 
 def application(config):
@@ -34,8 +32,8 @@ def application(config):
     launcher = Launcher(config, app)
     timer = TimerService(5, poller.poll)
     webservice = TCPServer(http_port, server.Site(Root(config, app)))
-    log.msg("Scrapyd web console available at http://localhost:%s/ (HEROKU)"
-        % http_port)
+    log.msg("Scrapyd web console available at http://localhost:%s/ (HEROKU)" %
+            http_port)
 
     launcher.setServiceParent(app)
     timer.setServiceParent(app)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name='scrapy-heroku',
@@ -16,7 +16,6 @@ setup(
     include_package_data=True,
     packages=find_packages(),
     install_requires=[
-        'distribute',
         'scrapy',
         'psycopg2',
     ],
@@ -30,5 +29,4 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Topic :: Internet :: WWW/HTTP',
-    ]
-)
+    ])

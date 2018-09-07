@@ -1,15 +1,23 @@
-import psycopg2
-import cPickle
-import json
-import urlparse
-from zope.interface import implements
+try:
+    import cPickle
+except ImportError:
+    import _pickle as cPickle
 
+import json
+
+import psycopg2
 from scrapyd.interfaces import ISpiderQueue
+from zope.interface import implementer
+
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 
 
 class Psycopg2PriorityQueue(object):
     def __init__(self, config, table='scrapy_queue'):
-        url = urlparse.urlparse(config.get('database_url'))
+        url = urlparse(config.get('database_url'))
         # Remove query strings.
         path = url.path[1:]
         path = path.split('?', 2)[0]
@@ -38,7 +46,7 @@ class Psycopg2PriorityQueue(object):
         try:
             cursor = self.conn.cursor()
             cursor.execute(q, args)
-        except (psycopg2.InterfaceError, psycopg2.OperationalError) as err:
+        except (psycopg2.InterfaceError, psycopg2.OperationalError):
             self.conn = psycopg2.connect(self.conn_string)
             cursor = self.conn.cursor()
             cursor.execute(q, args)
@@ -63,10 +71,10 @@ class Psycopg2PriorityQueue(object):
             % self.table
         results = self._execute(q)
         if len(results) == 0:
-            return
+            return None
         mid, msg = results[0]
         q = "delete from %s where id=%%s;" % self.table
-        self._execute(q, (mid,), results=False)
+        self._execute(q, (mid, ), results=False)
         self.conn.commit()
         return self.decode(msg)
 
@@ -76,7 +84,7 @@ class Psycopg2PriorityQueue(object):
         for mid, msg in self._execute(q):
             if func(self.decode(msg)):
                 q = "delete from %s where id=%%s" % self.table
-                self._execute(q, (mid,), results=False)
+                self._execute(q, (mid, ), results=False)
                 n += 1
         self.conn.commit()
         return n
@@ -107,7 +115,7 @@ class Psycopg2PriorityQueue(object):
 
 class PicklePsycopg2PriorityQueue(Psycopg2PriorityQueue):
     def encode(self, obj):
-        return buffer(cPickle.dumps(obj, protocol=2))
+        return memoryview(cPickle.dumps(obj, protocol=2))
 
     def decode(self, text):
         return cPickle.loads(str(text))
@@ -121,9 +129,8 @@ class JsonPsycopg2PriorityQueue(Psycopg2PriorityQueue):
         return json.loads(text)
 
 
+@implementer(ISpiderQueue)
 class Psycopg2SpiderQueue(object):
-    implements(ISpiderQueue)
-
     def __init__(self, config, table='spider_queue'):
         self.q = JsonPsycopg2PriorityQueue(config, table)
 

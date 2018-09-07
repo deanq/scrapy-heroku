@@ -1,6 +1,5 @@
+from scrapy_heroku.utils import get_spider_queues
 from scrapyd.poller import QueuePoller
-
-from .utils import get_spider_queues
 
 
 class Psycopg2QueuePoller(QueuePoller):
